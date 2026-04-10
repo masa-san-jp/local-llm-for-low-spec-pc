@@ -25,7 +25,7 @@ jobs:
           cache-dependency-path: app/pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
         working-directory: app
 
       - name: Type check & build
