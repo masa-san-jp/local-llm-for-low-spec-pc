@@ -9,6 +9,12 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react(), tailwindcss()],
 
+  // Exclude pdfjs-dist from pre-bundling so Vite doesn't rewrite the worker
+  // URL and the new URL(..., import.meta.url) pattern resolves correctly.
+  optimizeDeps: {
+    exclude: ['pdfjs-dist'],
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

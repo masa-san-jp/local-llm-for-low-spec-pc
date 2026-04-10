@@ -1,13 +1,14 @@
 import heic2any from 'heic2any'
 import * as pdfjsLib from 'pdfjs-dist'
+// `?url` tells Vite to emit the file as a static asset and return its URL.
+// This is more reliable than `new URL(..., import.meta.url)` for files in
+// node_modules, especially when pdfjs-dist is excluded from pre-bundling.
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import type { Attachment, AttachmentKind } from '../types/attachment'
 import { isHeic } from '../types/attachment'
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url,
-).toString()
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
 async function fileToBase64(file: File): Promise<string> {
   let target: File | Blob = file
