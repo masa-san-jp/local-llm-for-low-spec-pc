@@ -35,7 +35,7 @@ function generateMarkdown(session: Session): string {
   ]
 
   for (const msg of session.messages) {
-    const role = msg.role === 'user' ? '**ユーザー**' : '**Gemma**'
+    const role = msg.role === 'user' ? '**ユーザー**' : `**${session.modelId}**`
     lines.push(`### ${role}`)
     lines.push('')
     lines.push(msg.content)
@@ -52,9 +52,9 @@ async function archiveSession(session: Session): Promise<string> {
 
   await mkdir(logDir, { recursive: true })
 
-  const datePrefix = formatDate(session.updatedAt)
+  const fileDatePrefix = formatDate(session.updatedAt)
   const safeName = sanitizeFilename(session.title)
-  const filename = `${datePrefix}_${safeName}.md`
+  const filename = `${fileDatePrefix}_${safeName}.md`
   const filePath = await join(logDir, filename)
 
   await writeTextFile(filePath, markdown)
