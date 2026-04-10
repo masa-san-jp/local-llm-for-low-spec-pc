@@ -13,7 +13,7 @@
     "fs:allow-write",
     "fs:allow-remove",
     "fs:allow-mkdir",
-    "fs:scope-temp",
-    "fs:scope-appdata"
+    "fs:allow-home-write-recursive",
+    "fs:scope-temp"
   ]
 }
