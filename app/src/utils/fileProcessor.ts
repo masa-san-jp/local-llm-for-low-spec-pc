@@ -1,6 +1,13 @@
 import heic2any from 'heic2any'
+import * as pdfjsLib from 'pdfjs-dist'
 import type { Attachment, AttachmentKind } from '../types/attachment'
 import { isHeic } from '../types/attachment'
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.mjs',
+  import.meta.url,
+).toString()
 
 async function fileToBase64(file: File): Promise<string> {
   let target: File | Blob = file
@@ -23,30 +30,59 @@ async function fileToBase64(file: File): Promise<string> {
   })
 }
 
+/**
+ * Read a file as text, detecting encoding automatically.
+ * Tries UTF-8 first; falls back to Shift-JIS when the result contains
+ * the Unicode replacement character (U+FFFD), which indicates a mismatch.
+ */
 async function fileToText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(new Error('テキストファイルの読み込みに失敗しました'))
-    reader.readAsText(file, 'utf-8')
-  })
+  const buffer = await file.arrayBuffer()
+  const tryDecode = (encoding: string): string => new TextDecoder(encoding).decode(buffer)
+  const countReplacementChars = (text: string): number => (text.match(/\uFFFD/g) ?? []).length
+
+  const utf8 = tryDecode('utf-8')
+  // If UTF-8 decoding produced replacement characters, try Shift-JIS (common for Japanese CSV)
+  if (utf8.includes('\uFFFD')) {
+    try {
+      const sjis = tryDecode('shift-jis')
+      // Prefer Shift-JIS only when it produces fewer replacement characters
+      if (countReplacementChars(sjis) < countReplacementChars(utf8)) {
+        return sjis
+      }
+    } catch {
+      // TextDecoder may not support shift-jis in all environments; fall back to UTF-8
+    }
+  }
+  return utf8
 }
 
+/** Minimum number of extracted characters to consider a PDF readable (not a scan-only PDF) */
+const MIN_PDF_TEXT_LENGTH = 10
+
 async function extractPdfText(file: File): Promise<string> {
-  // Basic PDF text extraction: read as text and strip binary noise
-  // For a proper implementation, pdfjsLib can be added later
-  const text = await fileToText(file)
-  // Extract readable ASCII text from PDF
-  const readable = text
-    .replace(/[^\x20-\x7e\n\r\t\u3000-\u9fff\uff00-\uffef]/g, ' ')
-    .replace(/\s{3,}/g, '\n')
-    .trim()
-  if (readable.length < 50) {
+  const buffer = await file.arrayBuffer()
+  const loadingTask = pdfjsLib.getDocument({ data: buffer })
+  const pdf = await loadingTask.promise
+
+  const pageTexts: string[] = []
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i)
+    const content = await page.getTextContent()
+    const pageText = content.items
+      .map((item) => ('str' in item ? item.str : ''))
+      .join(' ')
+      .replace(/\s{3,}/g, '\n')
+      .trim()
+    if (pageText) pageTexts.push(pageText)
+  }
+
+  const result = pageTexts.join('\n\n').trim()
+  if (result.length < MIN_PDF_TEXT_LENGTH) {
     throw new Error(
       'このPDFからテキストを抽出できませんでした。スキャンPDFはサポートされていません。',
     )
   }
-  return readable.slice(0, 8000) // limit to avoid context overflow
+  return result.slice(0, 8000) // limit to avoid context overflow
 }
 
 async function processFile(
