@@ -26,7 +26,7 @@ CPU-only・メモリ8〜16GBの一般的なPCで動作します。
 | 方法 | 対象 | 特徴 |
 |------|------|------|
 | ターミナルセットアップ | 全OS | スクリプト一発で完結。初心者向け |
-| Dockerセットアップ | Linux / 開発者 | 環境を汚さず再現可能。CI/CDにも利用 |
+| Dockerセットアップ | — | **未対応**（今後対応予定） |
 
 ---
 
@@ -59,45 +59,13 @@ setup.bat
 
 ---
 
-### Dockerセットアップ（Linux / 開発者向け）
+### Dockerセットアップ（未対応 — 今後の対応事項）
 
-> **注意**: Docker 版は Linux デスクトップ環境（X11 / Wayland）でのみ動作します。  
-> macOS / Windows のエンドユーザーにはターミナルセットアップを推奨します。
+> **注記**: Docker 対応は現時点では未対応です。Dockerfileの整備・Docker Hubへのイメージ公開は今後対応予定です。
 
-#### 前提
-
-- Docker Desktop または Docker Engine がインストール済み
-- Linux の場合: X11 サーバーが利用可能
-
-#### Docker Hub からイメージを取得して実行
-
-```bash
-# イメージを取得
-docker pull masajpart/local-llm:latest
-
-# Ollama はホスト側で起動しておく
-ollama serve &
-
-# X11 経由でアプリを起動
-docker run --rm \
-  -e DISPLAY=$DISPLAY \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
-  --network host \
-  masajpart/local-llm:latest
-```
-
-#### ソースからビルドする場合
-
-```bash
-git clone https://github.com/masa-jp-art/local-llm-for-low-spec-pc.git
-cd local-llm-for-low-spec-pc
-docker build -t local-llm .
-docker run --rm \
-  -e DISPLAY=$DISPLAY \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
-  --network host \
-  local-llm
-```
+<!--
+Docker セットアップ手順はこちらに追記予定です。
+-->
 
 ---
 
@@ -207,9 +175,9 @@ pnpm tauri build  # 配布用ビルド
 GitHub Actions によりプッシュ時に以下が自動実行されます：
 
 - フロントエンドの型チェック & ビルド確認
-- Docker イメージのビルド & Docker Hub へのプッシュ（`main` ブランチのみ）
 
-Docker Hub への自動プッシュには、リポジトリの Secrets に `DOCKERHUB_USERNAME` と `DOCKERHUB_TOKEN` の設定が必要です。
+**未対応事項（今後の対応予定）**:
+- Docker イメージのビルド & Docker Hub へのプッシュ（`main` ブランチのみ）— 現時点では未対応
 
 ---
 
