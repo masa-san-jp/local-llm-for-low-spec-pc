@@ -62,7 +62,14 @@ const MIN_PDF_TEXT_LENGTH = 10
 
 async function extractPdfText(file: File): Promise<string> {
   const buffer = await file.arrayBuffer()
-  const loadingTask = pdfjsLib.getDocument({ data: buffer })
+  const loadingTask = pdfjsLib.getDocument({
+    data: buffer,
+    // Required for PDFs that use CJK (Japanese/Chinese/Korean) character maps
+    cMapUrl: '/cmaps/',
+    cMapPacked: true,
+    // Embedded font fallback data
+    standardFontDataUrl: '/standard_fonts/',
+  })
   const pdf = await loadingTask.promise
 
   const pageTexts: string[] = []

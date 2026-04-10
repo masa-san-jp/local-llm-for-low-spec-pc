@@ -39,8 +39,10 @@ function AttachmentPreview() {
           {att.status === 'processing' && (
             <span className="text-yellow-500 animate-pulse">処理中…</span>
           )}
-          {att.status === 'error' && (
-            <span title={att.errorMessage ?? ''}>⚠</span>
+          {att.status === 'error' && att.errorMessage && (
+            <span className="text-red-500 max-w-[180px] truncate" title={att.errorMessage}>
+              ⚠ {att.errorMessage}
+            </span>
           )}
           <button
             onClick={() => removeAttachment(att.id)}
