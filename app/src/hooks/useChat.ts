@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { ollamaClient } from '../services/ollamaClient'
 import { saveSession, deleteSession as deleteFromStorage } from '../services/sessionStorage'
+import { archiveSession as archiveSessionService } from '../services/archiveService'
 import { trimMessages } from '../utils/contextTrimmer'
 import { estimateTokens } from '../utils/tokenEstimator'
 import { buildAttachmentContext } from '../utils/fileProcessor'
@@ -152,7 +153,14 @@ function useChat() {
     [deleteSession],
   )
 
-  return { sendMessage, stopGeneration, startNewSession, removeSession, setActiveSession }
+  const archiveActiveSession = useCallback(async (): Promise<string> => {
+    const session = getActiveSession()
+    if (!session) throw new Error('アクティブな会話がありません')
+    if (session.messages.length === 0) throw new Error('会話が空です')
+    return archiveSessionService(session)
+  }, [getActiveSession])
+
+  return { sendMessage, stopGeneration, startNewSession, removeSession, setActiveSession, archiveActiveSession }
 }
 
 export { useChat }

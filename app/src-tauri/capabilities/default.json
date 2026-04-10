@@ -12,6 +12,7 @@
     "fs:allow-read",
     "fs:allow-write",
     "fs:allow-remove",
+    "fs:allow-mkdir",
     "fs:scope-temp",
     "fs:scope-appdata"
   ]
