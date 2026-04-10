@@ -33,11 +33,12 @@ jobs:
         working-directory: app
 
   # ── Docker ビルド & Docker Hub Push (main ブランチのみ) ──────────────────
+  # TODO: Docker Hub 対応が完了したら if: false を削除して有効化する
   docker:
     name: Docker build & push
     needs: frontend
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: false
     steps:
       - uses: actions/checkout@v4
 
