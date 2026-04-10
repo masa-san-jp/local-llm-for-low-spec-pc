@@ -1,13 +1,14 @@
 import heic2any from 'heic2any'
-import * as pdfjsLib from 'pdfjs-dist'
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
+// `?url` tells Vite to emit the file as a static asset and return its URL.
+// This is more reliable than `new URL(..., import.meta.url)` for files in
+// node_modules, especially when pdfjs-dist is excluded from pre-bundling.
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import type { Attachment, AttachmentKind } from '../types/attachment'
 import { isHeic } from '../types/attachment'
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url,
-).toString()
+GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
 async function fileToBase64(file: File): Promise<string> {
   let target: File | Blob = file
@@ -61,15 +62,31 @@ const MIN_PDF_TEXT_LENGTH = 10
 
 async function extractPdfText(file: File): Promise<string> {
   const buffer = await file.arrayBuffer()
-  const loadingTask = pdfjsLib.getDocument({ data: buffer })
+  const loadingTask = getDocument({
+    data: buffer,
+    // Required for PDFs that use CJK (Japanese/Chinese/Korean) character maps
+    cMapUrl: '/cmaps/',
+    cMapPacked: true,
+    // Embedded font fallback data
+    standardFontDataUrl: '/standard_fonts/',
+  })
   const pdf = await loadingTask.promise
 
   const pageTexts: string[] = []
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i)
-    const content = await page.getTextContent()
-    const pageText = content.items
-      .map((item) => ('str' in item ? item.str : ''))
+    // Use reader.read() instead of for-await-of to avoid ReadableStream[Symbol.asyncIterator]
+    // which is unsupported in some WKWebView environments
+    const stream = page.streamTextContent()
+    const reader = stream.getReader()
+    const allItems: Array<{ str?: string }> = []
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      allItems.push(...(value.items as Array<{ str?: string }>))
+    }
+    const pageText = allItems
+      .map((item) => item.str ?? '')
       .join(' ')
       .replace(/\s{3,}/g, '\n')
       .trim()

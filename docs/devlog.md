@@ -113,6 +113,37 @@
 
 ---
 
+### バグ修正：PDF 添付・アーカイブ機能
+
+**PDF 添付エラーの修正** (`app/src/utils/fileProcessor.ts`)
+
+- **症状**: PDF を添付すると `undefined is not a function (near '...value of readableStream...')` が表示される
+- **原因**: pdfjs-dist v5 の `getTextContent()` は内部で `for await...of readableStream` を使用しており、`ReadableStream[Symbol.asyncIterator]` が必要。Tauri の WKWebView 環境でこのメソッドが利用できないケースがあった
+- **対応**:
+  - `page.getTextContent()` を廃止し、`page.streamTextContent()` + `reader.read()` に変更
+  - `reader.read()` は Promise ベースの API のため WKWebView でも動作
+  - `import * as pdfjsLib` を named import（`import { getDocument, GlobalWorkerOptions }`）に変更
+
+**アーカイブ保存先の変更** (`app/src-tauri/src/lib.rs`, `app/src/services/archiveService.ts`)
+
+- **旧**: `~/Library/Application Support/com.ochyai.localllm/log/`（ユーザーが見つけにくい）
+- **新**: `<git clone したディレクトリ>/logs/`（ターミナルで `ls` すれば一目でわかる）
+- Rust コマンド `project_root` を追加し、`CARGO_MANIFEST_DIR`（コンパイル時定数）からプロジェクトルートを算出（`src-tauri/` → `app/` → プロジェクトルート）
+- `logs/` を `.gitignore` に追加
+
+**Tauri FS 権限エラーの修正** (`app/src-tauri/capabilities/default.json`)
+
+- **症状**: `fs.write_text_file not allowed` エラー
+- **原因**: Tauri 2.x の FS 権限は「スコープ（アクセス可能パス範囲）」と「コマンド（実行可能操作）」の2層構造。`fs:scope-appdata` はパス範囲のみで書き込みコマンドが未許可だった
+- **対応**: `fs:allow-home-write-recursive` に統一（`write-all` + `scope-home-recursive` を内包）
+
+**アーカイブエラーメッセージの改善** (`app/src/components/Sidebar.tsx`)
+
+- Tauri のエラーは `Error` インスタンスでない場合があり、常に「保存に失敗しました」と表示されていた
+- `String(err)` にフォールバックすることで実際のエラー内容を表示するよう修正
+
+---
+
 ### ドキュメント整備：改善計画ログの追加
 
 **対応内容**

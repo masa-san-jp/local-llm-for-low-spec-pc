@@ -1,5 +1,6 @@
 import { writeTextFile, mkdir } from '@tauri-apps/plugin-fs'
-import { appDataDir, join } from '@tauri-apps/api/path'
+import { join } from '@tauri-apps/api/path'
+import { invoke } from '@tauri-apps/api/core'
 import type { Session } from '../types/chat'
 
 function formatDate(ts: number): string {
@@ -47,8 +48,8 @@ function generateMarkdown(session: Session): string {
 
 async function archiveSession(session: Session): Promise<string> {
   const markdown = generateMarkdown(session)
-  const dataDir = await appDataDir()
-  const logDir = await join(dataDir, 'log')
+  const projectRoot = await invoke<string>('project_root')
+  const logDir = await join(projectRoot, 'logs')
 
   await mkdir(logDir, { recursive: true })
 

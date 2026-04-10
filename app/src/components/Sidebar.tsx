@@ -25,7 +25,8 @@ function Sidebar() {
       setArchiveMessage(`保存しました: ${path}`)
     } catch (err) {
       setArchiveStatus('error')
-      setArchiveMessage(err instanceof Error ? err.message : '保存に失敗しました')
+      const msg = err instanceof Error ? err.message : String(err)
+      setArchiveMessage(msg || '保存に失敗しました')
     } finally {
       setTimeout(() => {
         setArchiveStatus('idle')
