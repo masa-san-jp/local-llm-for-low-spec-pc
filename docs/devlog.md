@@ -95,6 +95,24 @@
 
 ## 2026-04-10（続）
 
+### UIの改善：音声入力UI削除・アーカイブ機能実装
+
+**音声入力UIの削除**
+- `SpecTable.tsx`: ウェルカム画面のスペック表から「音声」列を削除（音声入力はスコープ外）
+- `README.md`: 動作環境テーブルの音声入力列・Whisper.cpp の説明行・トラブルシューティングの音声言及を除去
+
+**アーカイブ機能の実装**
+- `services/archiveService.ts` を新規作成
+  - 会話を Markdown 形式に変換する `generateMarkdown()` 関数
+  - `appDataDir/log/yyyymmdd_タイトル.md` に保存する `archiveSession()` 関数
+- `hooks/useChat.ts` に `archiveActiveSession()` を追加（空セッションは例外をスロー）
+- `Sidebar.tsx` にアーカイブボタンを追加
+  - 会話が空の場合は無効化
+  - 保存中 / 成功 / エラーのインラインステータス表示
+- `capabilities/default.json` に `fs:allow-mkdir` 権限を追加（`log/` ディレクトリ作成に必要）
+
+---
+
 ### ドキュメント整備：改善計画ログの追加
 
 **対応内容**
