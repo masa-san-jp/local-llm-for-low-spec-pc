@@ -19,31 +19,96 @@ CPU-only・メモリ8〜16GBの一般的なPCで動作します。
 
 ---
 
-## インストール
+## セットアップ
 
-### 1. Ollama をインストール
+2通りの方法があります。**初めての方はターミナルセットアップ**を推奨します。
 
-[https://ollama.com/download](https://ollama.com/download) からダウンロードしてインストール。
+| 方法 | 対象 | 特徴 |
+|------|------|------|
+| ターミナルセットアップ | 全OS | スクリプト一発で完結。初心者向け |
+| Dockerセットアップ | Linux / 開発者 | 環境を汚さず再現可能。CI/CDにも利用 |
 
-### 2. Gemma 4 E2B モデルをプル
+---
+
+### ターミナルセットアップ（推奨）
+
+#### 事前準備
+
+- **Node.js 18+** — [nodejs.org](https://nodejs.org/) からインストール
+- **Rust** — セットアップスクリプトが自動インストール
+- **Ollama** — セットアップスクリプトが自動インストール
+
+#### macOS / Linux
 
 ```bash
-ollama pull gemma4:e2b
+git clone https://github.com/masa-jp-art/local-llm-for-low-spec-pc.git
+cd local-llm-for-low-spec-pc
+chmod +x setup.sh
+./setup.sh
 ```
 
-モデルサイズは約2GB。ダウンロードに数分かかります。
+#### Windows
 
-**画像入力を使う場合（16GB推奨）：** mmproj ファイルも必要です。
-
-```bash
-ollama pull gemma4:e2b-mmproj
+```bat
+git clone https://github.com/masa-jp-art/local-llm-for-low-spec-pc.git
+cd local-llm-for-low-spec-pc
+setup.bat
 ```
 
-### 3. アプリを起動
+セットアップが完了したら「起動方法」へ進んでください。
+
+---
+
+### Dockerセットアップ（Linux / 開発者向け）
+
+> **注意**: Docker 版は Linux デスクトップ環境（X11 / Wayland）でのみ動作します。  
+> macOS / Windows のエンドユーザーにはターミナルセットアップを推奨します。
+
+#### 前提
+
+- Docker Desktop または Docker Engine がインストール済み
+- Linux の場合: X11 サーバーが利用可能
+
+#### Docker Hub からイメージを取得して実行
 
 ```bash
+# イメージを取得
+docker pull masajpart/local-llm:latest
+
+# Ollama はホスト側で起動しておく
+ollama serve &
+
+# X11 経由でアプリを起動
+docker run --rm \
+  -e DISPLAY=$DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  --network host \
+  masajpart/local-llm:latest
+```
+
+#### ソースからビルドする場合
+
+```bash
+git clone https://github.com/masa-jp-art/local-llm-for-low-spec-pc.git
+cd local-llm-for-low-spec-pc
+docker build -t local-llm .
+docker run --rm \
+  -e DISPLAY=$DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  --network host \
+  local-llm
+```
+
+---
+
+## 起動方法
+
+```bash
+# 1. Ollama を起動（インストール後は自動起動する場合あり）
+ollama serve
+
+# 2. アプリを起動（別ターミナルで）
 cd app
-pnpm install
 pnpm tauri dev
 ```
 
@@ -78,6 +143,8 @@ pnpm tauri dev
 
 ## トラブルシューティング
 
+### よくある問題
+
 **「モデルが見つかりません」と表示される**
 ```bash
 ollama pull gemma4:e2b
@@ -94,8 +161,27 @@ ollama serve
 - 8GB 環境では画像入力を無効化してください
 
 **画像入力が使えない**
-- mmproj ファイルのダウンロードが必要です（「インストール」手順参照）
+- mmproj ファイルのダウンロードが必要です
 - 8GB 環境では画像入力は非推奨です
+
+---
+
+### FAQ
+
+**Q. setup.sh でエラーが出る**  
+A. まず `node -v` で Node.js 18 以上がインストールされているか確認してください。Rust のインストール中にエラーが出た場合は [rustup.rs](https://rustup.rs/) から手動でインストールできます。
+
+**Q. モデルのダウンロードに時間がかかる / 途中で止まる**  
+A. `ollama pull gemma4:e2b` は約 2GB のダウンロードです。中断された場合は同じコマンドを再実行すると続きから再開されます。
+
+**Q. Docker でアプリが起動しない（Linux）**  
+A. X11 の認証が必要な場合があります。`xhost +local:docker` を実行してから再試行してください。
+
+**Q. Windows で `setup.bat` が「Rust が見つかりません」で終了する**  
+A. [rust-lang.org/tools/install](https://www.rust-lang.org/tools/install) からインストーラをダウンロードし、インストール完了後に `setup.bat` を再実行してください。
+
+**Q. `pnpm tauri dev` でビルドエラーが出る（Windows）**  
+A. Microsoft C++ Build Tools が必要です。[Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) からインストールしてください。
 
 ---
 
@@ -115,6 +201,15 @@ pnpm tauri build  # 配布用ビルド
 - **状態管理**: Zustand
 - **推論バックエンド**: Ollama（localhost:11434）
 - **モデル**: Gemma 4 E2B
+
+### CI/CD
+
+GitHub Actions によりプッシュ時に以下が自動実行されます：
+
+- フロントエンドの型チェック & ビルド確認
+- Docker イメージのビルド & Docker Hub へのプッシュ（`main` ブランチのみ）
+
+Docker Hub への自動プッシュには、リポジトリの Secrets に `DOCKERHUB_USERNAME` と `DOCKERHUB_TOKEN` の設定が必要です。
 
 ---
 
