@@ -1,0 +1,6 @@
+# Keep unknown dependency install scripts blocked and fail for unreviewed ones.
+strictDepBuilds: true
+allowBuilds:
+  # The locked optional @esbuild/<platform> package supplies the native binary.
+  # Vite uses the JS API; no postinstall download or CLI optimization is needed.
+  esbuild@0.27.7: false
