@@ -3,9 +3,8 @@ FROM node:20-alpine AS frontend
 
 WORKDIR /workspace/app
 
-RUN npm install -g pnpm@latest
-
-COPY app/package.json app/pnpm-lock.yaml ./
+COPY app/package.json app/pnpm-lock.yaml app/pnpm-workspace.yaml ./
+RUN npm install -g "$(node -p "require('./package.json').packageManager")"
 RUN pnpm install --frozen-lockfile
 
 COPY app/index.html app/tsconfig.json app/tsconfig.node.json app/vite.config.ts ./
